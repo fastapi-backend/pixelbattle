@@ -8,8 +8,14 @@ from model import schemas
 from model.core import User, Battle
 from model.database import SessionLocal
 from secure import pwd_context
+import os
+import jwt
+
+SECRET_KEY = os.getenv("SECRET_KEY_JWT")
+ALGORITHM = 'HS256'
 
 router = APIRouter()
+
 
 # Dependency
 async def get_db():
@@ -28,8 +34,12 @@ class ConnectionManager:
         await websocket.accept()
         self.active_connections.append(websocket)
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+    async def disconnect(self, websocket: WebSocket,code: int):
+        try:
+         await websocket.close(code)
+         self.active_connections.remove(websocket)
+        except Exception:
+            pass
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_json(message)
@@ -77,6 +87,20 @@ async def get_user(db: Session = Depends(get_db), current_user: schemas.UserBase
 async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):  
     await manager.connect(websocket)
     try:
+        data = await websocket.receive_text()
+        payload = jwt.decode(data, SECRET_KEY, algorithms=[ALGORITHM])
+        decode_username: str = payload.get('username')
+        user: User = await db.scalar(select(User).where(User.email == decode_username))
+        if user:
+            await manager.send_personal_message("data",websocket)
+    except Exception:
+            await manager.send_personal_message("disconnect",websocket)
+            await manager.disconnect(websocket, 1000)
+            return
+
+
+
+    try:
         while True:
             data = await websocket.receive_json()
             if manager.broadcast:
@@ -96,5 +120,6 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
                         await db.refresh(battle)
                 await manager.broadcast(data)
     except Exception:
-        manager.disconnect(websocket)
+        await manager.send_personal_message("disconnect",websocket)
+        await manager.disconnect(websocket, 1011)
  
