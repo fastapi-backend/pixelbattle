@@ -52,7 +52,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@router.post("/users/register", status_code=201)
+@router.post("/register/", status_code=201)
 async def register_user(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     return await register(db=db, user_data=user_data)
 
@@ -112,13 +112,14 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
                         battle.color = color
                         await db.commit()
                         await db.refresh(battle)
+                        await manager.broadcast(data)
                     else:
                         battle = Battle(pixel=pixel)
                         battle.color = color
                         db.add(battle)
                         await db.commit()
                         await db.refresh(battle)
-                await manager.broadcast(data)
+                        await manager.broadcast(data)
     except Exception:
         await manager.send_personal_message("disconnect",websocket)
         await manager.disconnect(websocket, 1011)
