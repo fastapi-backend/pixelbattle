@@ -29,6 +29,9 @@ async def get_db():
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
+        
+    async def append(self, websocket: WebSocket):
+        self.active_connections.append(websocket)
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
@@ -85,14 +88,15 @@ async def get_user(db: Session = Depends(get_db), current_user: schemas.UserBase
 
 @router.websocket("/ws/")
 async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):  
-    await manager.connect(websocket)
+    await websocket.accept()
     try:
         data = await websocket.receive_text()
         payload = jwt.decode(data, SECRET_KEY, algorithms=[ALGORITHM])
         decode_username: str = payload.get('username')
         user: User = await db.scalar(select(User).where(User.email == decode_username))
         if user:
-            await manager.send_personal_message("data",websocket)
+            await manager.append(websocket)
+            await manager.send_personal_message("connect",websocket)
     except Exception:
             await manager.send_personal_message("disconnect",websocket)
             await manager.disconnect(websocket, 1000)
