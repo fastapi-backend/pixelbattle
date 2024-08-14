@@ -33,10 +33,7 @@ class ConnectionManager:
     async def append(self, websocket: WebSocket):
         self.active_connections.append(websocket)
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
+    
     async def disconnect(self, websocket: WebSocket,code: int):
         try:
          await websocket.close(code)
@@ -79,7 +76,7 @@ async def get_token(request: OAuth2PasswordRequestForm = Depends(),
 
 
 @router.get("/battle/")
-async def get_user(db: Session = Depends(get_db), current_user: schemas.UserBase = Depends(get_current_user)): 
+async def battle(db: Session = Depends(get_db), current_user: schemas.UserBase = Depends(get_current_user)): 
     if current_user:
         all = await db.execute(select(Battle))
         return all.scalars().all()
