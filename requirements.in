@@ -1,9 +1,9 @@
 fastapi
 uvicorn[standard]
-sqlalchemy[asyncio]
-asyncpg
-alembic
 passlib
 bcrypt
 pyjwt
 WebSockets
+pydantic_redis
+pydantic[email]
+python-multipart

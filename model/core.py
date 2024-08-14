@@ -1,23 +1,18 @@
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer
-from sqlalchemy.orm import declarative_base
+import asyncio
+from pydantic_redis.asyncio import Model, Store, RedisConfig
+
+class User(Model):
+    _primary_key_field: str = 'email'
+    email: str
+    hashed_password: str
+    is_active: bool = True
+
+class Battle(Model):
+    _primary_key_field: str = 'pixel'
+    pixel: str
+    color: str
 
 
-Base = declarative_base()
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    is_active = Column(Boolean, default=True)
-
-
-
-class Battle(Base):
-    __tablename__ = "battles"
-    id = Column(Integer, primary_key=True)
-    pixel = Column(String)
-    color = Column(String)
-
+store = Store(name='db', redis_config=RedisConfig(host='localhost', port=4722))
+store.register_model(User)
+store.register_model(Battle)
