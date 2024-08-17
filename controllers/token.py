@@ -1,7 +1,7 @@
 
 from datetime import datetime, timedelta
 from fastapi import HTTPException, Depends, status
-from model.core import User
+from model.core import ModelInterface,User,Battle
 from secure import oauth2_schema
 from typing import Optional
 import jwt
@@ -10,6 +10,7 @@ import os
 SECRET_KEY = os.getenv("SECRET_KEY_JWT")
 ALGORITHM = 'HS256'
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+interface = ModelInterface()
 
 
 
@@ -42,7 +43,7 @@ async def get_current_user(oauth2: str = Depends(oauth2_schema)):
             raise credentials_exeption
 
         
-        user = await User.select(ids=[decode_username])
+        user = await interface.get_model_filter(model=User,filter=decode_username)
 
         if user is None:
             raise credentials_exeption
